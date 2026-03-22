@@ -13,11 +13,13 @@ npm install
 npm run build
 ```
 
-Verify the build succeeded:
+Verify the build succeeded and the API key works:
 
 ```bash
-test -f ~/slidecraft-mcp/dist/server.js && echo "Build OK" || echo "Build FAILED"
+SLIDECRAFT_API_KEY=USER_API_KEY node ~/slidecraft-mcp/dist/server.js --health
 ```
+
+Replace `USER_API_KEY` with the user's API key. You should see "Health check passed."
 
 ## Step 2: Add to Claude Desktop config
 
@@ -37,7 +39,7 @@ The entry to add (use the user's home directory for the path):
   "command": "node",
   "args": ["HOME_DIR/slidecraft-mcp/dist/server.js", "--stdio"],
   "env": {
-    "SLIDECRAFT_API_URL": "https://fye60j6dqb.execute-api.us-east-1.amazonaws.com",
+    "SLIDECRAFT_API_URL": "https://slidecraft.alpha-pm.dev",
     "SLIDECRAFT_API_KEY": "USER_API_KEY"
   }
 }

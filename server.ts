@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * SlideCraft MCP App Server
  *
@@ -22,7 +23,7 @@ import { z } from "zod";
 
 const SLIDECRAFT_API =
   process.env.SLIDECRAFT_API_URL ||
-  "https://fye60j6dqb.execute-api.us-east-1.amazonaws.com";
+  "https://slidecraft.alpha-pm.dev";
 
 const SLIDECRAFT_API_KEY = process.env.SLIDECRAFT_API_KEY || "";
 
@@ -324,6 +325,30 @@ export function createServer(apiKey?: string): McpServer {
 // ── Entrypoint ──
 
 async function main() {
+  // Health check: verify build, API key, and API connectivity
+  if (process.argv.includes("--health")) {
+    console.log("SlideCraft MCP Server v1.0.0");
+    console.log(`  API URL: ${SLIDECRAFT_API}`);
+    console.log(`  API Key: ${SLIDECRAFT_API_KEY ? SLIDECRAFT_API_KEY.substring(0, 12) + "..." : "(not set)"}`);
+    try {
+      const res = await fetch(`${SLIDECRAFT_API}/api/projects`, {
+        headers: SLIDECRAFT_API_KEY ? { Authorization: `Bearer ${SLIDECRAFT_API_KEY}` } : {},
+      });
+      const data = (await res.json()) as { projects?: unknown[] };
+      if (res.ok && data.projects) {
+        console.log(`  API Status: OK (${data.projects.length} projects)`);
+        console.log("\nHealth check passed. Ready to use.");
+        process.exit(0);
+      } else {
+        console.log(`  API Status: ERROR (HTTP ${res.status})`);
+        process.exit(1);
+      }
+    } catch (err) {
+      console.log(`  API Status: UNREACHABLE (${err})`);
+      process.exit(1);
+    }
+  }
+
   if (process.argv.includes("--stdio")) {
     const server = createServer();
     await server.connect(new StdioServerTransport());

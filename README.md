@@ -39,7 +39,7 @@ Add to `mcpServers`:
       "command": "node",
       "args": ["/FULL/PATH/TO/slidecraft-mcp/dist/server.js", "--stdio"],
       "env": {
-        "SLIDECRAFT_API_URL": "https://fye60j6dqb.execute-api.us-east-1.amazonaws.com",
+        "SLIDECRAFT_API_URL": "https://slidecraft.alpha-pm.dev",
         "SLIDECRAFT_API_KEY": "csk_YOUR_API_KEY_HERE"
       }
     }

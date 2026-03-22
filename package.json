@@ -1,16 +1,29 @@
 {
-  "name": "slidecraft-mcp-app",
+  "name": "slidecraft-mcp",
   "version": "1.0.0",
   "type": "module",
   "description": "SlideCraft MCP App — create AI slide decks from Claude Desktop",
+  "bin": {
+    "slidecraft-mcp": "./dist/server.js"
+  },
   "scripts": {
     "build:client": "INPUT=mcp-app.html vite build",
     "build:server": "tsc -p tsconfig.server.json",
     "build": "npm run build:client && npm run build:server",
+    "prepublishOnly": "npm run build",
     "dev": "concurrently \"INPUT=mcp-app.html vite build --watch\" \"tsx --watch server.ts\"",
     "start": "node dist/server.js",
     "start:stdio": "node dist/server.js --stdio"
   },
+  "files": [
+    "dist/"
+  ],
+  "keywords": ["mcp", "slidecraft", "slides", "presentation", "claude", "ai"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dwinter3/slidecraft-mcp.git"
+  },
+  "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.2.0",
     "@modelcontextprotocol/sdk": "^1.25.0",
