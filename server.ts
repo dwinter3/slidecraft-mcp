@@ -69,11 +69,11 @@ export function createServer(apiKey?: string): McpServer {
     {
       title: "Create Slide Deck",
       description:
-        "Create an AI-powered slide deck. Opens an interactive wizard where the user can browse visual styles with thumbnail previews, pick their audience, and choose slide count. IMPORTANT: Only pass the topic — do NOT pre-select audience, vibe, or slideCount. Let the user choose interactively in the wizard UI.",
+        "Create an AI-powered slide deck. Opens an interactive wizard where the user can browse visual styles with thumbnail previews, pick their audience, and choose slide count. IMPORTANT: Only pass the topic — do NOT pre-select audience, vibe, or slideCount. Let the user choose interactively in the wizard UI. If the user attached files, pasted URLs, or provided any content, include ALL of it in the topic field — the more context, the better the deck.",
       inputSchema: {
         topic: z
           .string()
-          .describe("What the deck is about — topic, objective, or paste content. Pass the user's full description."),
+          .describe("The full content for the deck. Include EVERYTHING the user provided: their description, any pasted text, file contents, URL contents, meeting notes, etc. The more context, the better the AI can plan the deck."),
       },
       _meta: { ui: { resourceUri } },
     },
