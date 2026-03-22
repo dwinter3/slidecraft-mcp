@@ -275,6 +275,238 @@ function stopPolling() {
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
 }
 
+// ── Wizard ──
+
+const AUDIENCES = [
+  { key: "executives", title: "Executives", desc: "C-suite, business outcomes" },
+  { key: "board", title: "Board", desc: "Governance, strategy, risk" },
+  { key: "investors", title: "Investors", desc: "Traction, TAM, unit economics" },
+  { key: "cofounder", title: "Co-founder", desc: "Decisions, blockers, honest" },
+  { key: "technical", title: "Technical", desc: "Architecture, trade-offs" },
+  { key: "engineering_team", title: "Engineering", desc: "Peers, skip the pitch" },
+  { key: "sales", title: "Sales Team", desc: "ROI, proof points, ammo" },
+  { key: "customers", title: "Customers", desc: "Their pain, your solution" },
+  { key: "partners", title: "Partners", desc: "Mutual value, integration" },
+  { key: "non_technical", title: "Non-Technical", desc: "Smart, not engineers" },
+  { key: "new_hires", title: "New Hires", desc: "Zero context onboarding" },
+  { key: "regulators", title: "Regulators", desc: "Compliance, controls" },
+  { key: "skeptics", title: "Skeptics", desc: "Prove it. Show data." },
+  { key: "journalists", title: "Journalists", desc: "Newsworthy angle" },
+  { key: "grandparents", title: "Grandparents", desc: "Warm, simple" },
+  { key: "five_year_old", title: "Five Year Old", desc: "Lemonade stand" },
+  { key: "general", title: "General", desc: "Mixed audience" },
+];
+
+const VIBES = [
+  { key: "bold_corporate", title: "Bold Corporate", desc: "Dark gradients, gold" },
+  { key: "ted_talk", title: "TED Talk", desc: "Big idea, bold type" },
+  { key: "minimal_clean", title: "Minimal Clean", desc: "Whitespace, muted" },
+  { key: "creative_agency", title: "Creative Agency", desc: "Vibrant gradients" },
+  { key: "storytelling", title: "Storytelling", desc: "Cinematic, emotional" },
+  { key: "data_heavy", title: "Data Heavy", desc: "Charts, infographic" },
+  { key: "infographic", title: "Infographic", desc: "Flat design, icons" },
+  { key: "whiteboard", title: "Whiteboard", desc: "Hand-drawn sketches" },
+  { key: "chalkboard", title: "Chalkboard", desc: "Chalk on dark board" },
+  { key: "sketch_pencil", title: "Pencil Sketch", desc: "Hand-drawn, notebook" },
+  { key: "comic_panels", title: "Comic Panels", desc: "Bold outlines, bubbles" },
+  { key: "cartoon", title: "Cartoon", desc: "Bright, playful" },
+  { key: "newspaper", title: "Newspaper", desc: "Vintage broadsheet" },
+  { key: "magazine_editorial", title: "Magazine", desc: "Editorial spreads" },
+  { key: "blueprint", title: "Blueprint", desc: "Technical, navy+cyan" },
+  { key: "neon_cyberpunk", title: "Neon Cyberpunk", desc: "Glowing neon, purple" },
+  { key: "retro_80s", title: "Retro 80s", desc: "Synthwave, chrome" },
+  { key: "art_deco", title: "Art Deco", desc: "1920s gold, Gatsby" },
+  { key: "watercolor", title: "Watercolor", desc: "Painted washes" },
+  { key: "space_cosmic", title: "Space Cosmic", desc: "Nebulas, star fields" },
+  { key: "polaroid", title: "Polaroid", desc: "Scrapbook, photos" },
+  { key: "pixel_art", title: "Pixel Art", desc: "8-bit retro gaming" },
+  { key: "nature_organic", title: "Nature", desc: "Forest, earth tones" },
+  { key: "luxury_gold", title: "Luxury Gold", desc: "Black + gold leaf" },
+  { key: "grunge_punk", title: "Punk Zine", desc: "Torn paper, DIY" },
+  { key: "anime_cel", title: "Anime", desc: "Cel-shaded, manga" },
+  { key: "terminal_hacker", title: "Terminal", desc: "Green text, CRT" },
+  { key: "isometric", title: "Isometric", desc: "Miniature 3D worlds" },
+  { key: "riso_print", title: "Risograph", desc: "Grain, spot colors" },
+  { key: "botanical", title: "Botanical", desc: "Lush leaves, naturalist" },
+  { key: "retro_70s", title: "Retro 70s", desc: "Sunburst, warm" },
+  { key: "dark_topo", title: "Topographic", desc: "Contour lines, terrain" },
+  { key: "paper_craft", title: "Paper Craft", desc: "Cut paper, origami" },
+  { key: "vintage_90s", title: "Vintage 90s", desc: "Memphis, MTV" },
+  { key: "kittens", title: "Kittens", desc: "Business cats, cute" },
+  { key: "bloomberg_keynote", title: "Bloomberg", desc: "Teal-slate, WWDC" },
+];
+
+let wizTopic = "";
+let wizAudience = "";
+let wizVibe = "";
+let wizSlideCount = 8;
+let wizVibeSamples: Record<string, string> = {};
+
+function renderWizard(topic: string, vibeSamples: Record<string, string>) {
+  wizTopic = topic;
+  wizVibeSamples = vibeSamples;
+  const wiz = $("wizard");
+  wiz.style.display = "";
+  wiz.textContent = "";
+
+  // Topic display
+  const topicEl = document.createElement("div");
+  topicEl.className = "wiz-topic";
+  topicEl.textContent = topic.length > 200 ? topic.substring(0, 200) + "..." : topic;
+  wiz.appendChild(topicEl);
+
+  // Audience
+  const audSection = document.createElement("div");
+  audSection.className = "wiz-section";
+  const audLabel = document.createElement("div");
+  audLabel.className = "wiz-label";
+  audLabel.textContent = "Who is your audience?";
+  audSection.appendChild(audLabel);
+  const audGrid = document.createElement("div");
+  audGrid.className = "wiz-grid";
+  audGrid.id = "aud-grid";
+  AUDIENCES.forEach((a) => {
+    const opt = document.createElement("div");
+    opt.className = "wiz-opt" + (wizAudience === a.key ? " selected" : "");
+    opt.dataset.key = a.key;
+    const t = document.createElement("div");
+    t.className = "wiz-opt-title";
+    t.textContent = a.title;
+    const d = document.createElement("div");
+    d.className = "wiz-opt-desc";
+    d.textContent = a.desc;
+    opt.appendChild(t);
+    opt.appendChild(d);
+    opt.addEventListener("click", () => {
+      wizAudience = a.key;
+      audGrid.querySelectorAll(".wiz-opt").forEach((o) => o.classList.remove("selected"));
+      opt.classList.add("selected");
+    });
+    audGrid.appendChild(opt);
+  });
+  audSection.appendChild(audGrid);
+  wiz.appendChild(audSection);
+
+  // Vibe
+  const vibeSection = document.createElement("div");
+  vibeSection.className = "wiz-section";
+  const vibeLabel = document.createElement("div");
+  vibeLabel.className = "wiz-label";
+  vibeLabel.textContent = "Visual style";
+  vibeSection.appendChild(vibeLabel);
+  const vibeGrid = document.createElement("div");
+  vibeGrid.className = "wiz-grid vibe-grid";
+  vibeGrid.id = "vibe-grid";
+  VIBES.forEach((v) => {
+    const opt = document.createElement("div");
+    opt.className = "wiz-opt vibe-card" + (wizVibe === v.key ? " selected" : "");
+    opt.dataset.key = v.key;
+    if (vibeSamples[v.key]) {
+      opt.style.backgroundImage = `url(${vibeSamples[v.key]})`;
+    }
+    const label = document.createElement("div");
+    label.className = "vibe-label";
+    const t = document.createElement("div");
+    t.className = "wiz-opt-title";
+    t.textContent = v.title;
+    const d = document.createElement("div");
+    d.className = "wiz-opt-desc";
+    d.textContent = v.desc;
+    label.appendChild(t);
+    label.appendChild(d);
+    opt.appendChild(label);
+    opt.addEventListener("click", () => {
+      wizVibe = v.key;
+      vibeGrid.querySelectorAll(".wiz-opt").forEach((o) => o.classList.remove("selected"));
+      opt.classList.add("selected");
+    });
+    vibeGrid.appendChild(opt);
+  });
+  vibeSection.appendChild(vibeGrid);
+  wiz.appendChild(vibeSection);
+
+  // Slide count
+  const countSection = document.createElement("div");
+  countSection.className = "wiz-section";
+  const countLabel = document.createElement("div");
+  countLabel.className = "wiz-label";
+  countLabel.textContent = "How many slides?";
+  countSection.appendChild(countLabel);
+  const countRow = document.createElement("div");
+  countRow.className = "slide-count-row";
+  countRow.id = "count-row";
+  [5, 8, 10, 12, 15].forEach((n) => {
+    const opt = document.createElement("div");
+    opt.className = "wiz-opt" + (wizSlideCount === n ? " selected" : "");
+    opt.dataset.key = String(n);
+    const t = document.createElement("div");
+    t.className = "wiz-opt-title";
+    t.textContent = String(n);
+    const d = document.createElement("div");
+    d.className = "wiz-opt-desc";
+    d.textContent = n <= 5 ? "Quick pitch" : n <= 8 ? "Standard" : n <= 10 ? "Full talk" : n <= 12 ? "Detailed" : "Deep dive";
+    opt.appendChild(t);
+    opt.appendChild(d);
+    opt.addEventListener("click", () => {
+      wizSlideCount = n;
+      countRow.querySelectorAll(".wiz-opt").forEach((o) => o.classList.remove("selected"));
+      opt.classList.add("selected");
+    });
+    countRow.appendChild(opt);
+  });
+  countSection.appendChild(countRow);
+  wiz.appendChild(countSection);
+
+  // Submit button
+  const submitBtn = document.createElement("button");
+  submitBtn.className = "wiz-submit";
+  submitBtn.id = "wiz-submit";
+  submitBtn.textContent = "Create Deck";
+  submitBtn.addEventListener("click", submitWizard);
+  wiz.appendChild(submitBtn);
+
+  // Pre-select defaults
+  wizAudience = "";
+  wizVibe = "";
+  wizSlideCount = 8;
+  countRow.querySelector('[data-key="8"]')?.classList.add("selected");
+}
+
+async function submitWizard() {
+  if (!wizAudience) { setStatus("Please select an audience", true); return; }
+  if (!wizVibe) { setStatus("Please select a visual style", true); return; }
+
+  const btn = $("wiz-submit") as HTMLButtonElement;
+  btn.disabled = true;
+  btn.textContent = "Creating deck...";
+  $("wizard").style.display = "none";
+  setStatus(`Creating deck \u2014 ${wizSlideCount} slides, ${wizVibe} style, for ${wizAudience}...`);
+  setBadge("creating");
+
+  try {
+    const result = await app.callServerTool({
+      name: "submit-deck",
+      arguments: { topic: wizTopic, audience: wizAudience, vibe: wizVibe, slideCount: wizSlideCount },
+    });
+    const data = (result as any).structuredContent;
+    if (data?.error) {
+      setStatus("Error: " + data.error, true);
+      return;
+    }
+    projectId = data.projectId;
+    const link = $("web-link") as HTMLAnchorElement;
+    link.href = data.webUrl;
+    link.style.display = "";
+    link.textContent = "Open in SlideCraft";
+    startPolling();
+  } catch (err) {
+    setStatus("Error: " + String(err), true);
+    btn.disabled = false;
+    btn.textContent = "Create Deck";
+    $("wizard").style.display = "";
+  }
+}
+
 // ── Event handlers (register BEFORE connect) ──
 
 app.ontoolresult = (result: any) => {
@@ -283,7 +515,11 @@ app.ontoolresult = (result: any) => {
 
   currentAction = data.action || "";
 
-  if (currentAction === "create-deck") {
+  if (currentAction === "wizard") {
+    setBadge("wizard");
+    setStatus("Choose your audience, visual style, and slide count:");
+    renderWizard(data.topic, data.vibeSamples || {});
+  } else if (currentAction === "create-deck") {
     setBadge("creating");
     projectId = data.projectId;
     planId = data.planId;

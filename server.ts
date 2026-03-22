@@ -62,67 +62,56 @@ export function createServer(apiKey?: string): McpServer {
   const resourceUri = "ui://slidecraft/mcp-app.html";
 
   // ── Tool: create-deck ──
+  // Opens an interactive wizard UI where the user picks audience, visual style (with thumbnails), and slide count
   registerAppTool(
     server,
     "create-deck",
     {
       title: "Create Slide Deck",
       description:
-        "Create an AI-powered slide deck. Provide a topic/description, audience, visual style, and slide count. Returns an interactive deck builder.",
+        "Create an AI-powered slide deck. Opens an interactive wizard where the user can browse visual styles with thumbnail previews, pick their audience, and choose slide count. IMPORTANT: Only pass the topic — do NOT pre-select audience, vibe, or slideCount. Let the user choose interactively in the wizard UI.",
       inputSchema: {
         topic: z
           .string()
-          .describe("What the deck is about — topic, objective, or paste content"),
-        audience: z
-          .enum([
-            "executives",
-            "board",
-            "investors",
-            "cofounder",
-            "technical",
-            "engineering_team",
-            "sales",
-            "customers",
-            "partners",
-            "non_technical",
-            "general",
-          ])
-          .default("general")
-          .describe("Target audience"),
-        vibe: z
-          .enum([
-            "bold_corporate",
-            "ted_talk",
-            "minimal_clean",
-            "creative_agency",
-            "storytelling",
-            "data_heavy",
-            "infographic",
-            "whiteboard",
-            "chalkboard",
-            "blueprint",
-            "neon_cyberpunk",
-            "retro_80s",
-            "art_deco",
-            "watercolor",
-            "space_cosmic",
-            "pixel_art",
-            "nature_organic",
-            "terminal_hacker",
-            "isometric",
-            "kittens",
-            "bloomberg_keynote",
-          ])
-          .default("bold_corporate")
-          .describe("Visual style"),
-        slideCount: z
-          .number()
-          .min(3)
-          .max(20)
-          .default(8)
-          .describe("Number of slides (3-20)"),
+          .describe("What the deck is about — topic, objective, or paste content. Pass the user's full description."),
       },
       _meta: { ui: { resourceUri } },
+    },
+    async ({ topic }) => {
+      // Fetch vibe sample thumbnails for the wizard
+      const vibeSamples = (await apiCall("GET", "/api/vibe-samples")) as Record<string, string>;
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Opening SlideCraft deck wizard for: "${topic.substring(0, 100)}"\n\nThe user will choose their audience, visual style, and slide count in the interactive UI.`,
+          },
+        ],
+        structuredContent: {
+          action: "wizard",
+          topic,
+          vibeSamples,
+          apiUrl: SLIDECRAFT_API,
+        },
+      };
+    },
+  );
+
+  // ── Tool: submit-deck (app-only — called by wizard UI after user makes selections) ──
+  registerAppTool(
+    server,
+    "submit-deck",
+    {
+      title: "Submit Deck",
+      description: "Create and start generating a deck after user has made selections in the wizard",
+      inputSchema: {
+        topic: z.string(),
+        audience: z.string(),
+        vibe: z.string(),
+        slideCount: z.number(),
+      },
+      _meta: { ui: { resourceUri, visibility: ["app"] } },
     },
     async ({ topic, audience, vibe, slideCount }) => {
       // 1. Create project
@@ -138,6 +127,7 @@ export function createServer(apiKey?: string): McpServer {
       if (!project.ok) {
         return {
           content: [{ type: "text", text: "Failed to create project" }],
+          structuredContent: { error: "Failed to create project" },
         };
       }
 
@@ -157,26 +147,24 @@ export function createServer(apiKey?: string): McpServer {
         slide_count: slideCount,
       })) as { ok: boolean; plan_id: string };
 
-      const result = {
-        action: "create-deck",
-        projectId: project.project_id,
-        planId: plan.plan_id,
-        topic,
-        audience,
-        vibe,
-        slideCount,
-        apiUrl: SLIDECRAFT_API,
-        webUrl: `https://slidecraft.alpha-pm.dev/?project=${project.project_id}&tab=overview`,
-      };
-
       return {
         content: [
           {
             type: "text",
-            text: `Creating "${topic}" — ${slideCount} slides, ${vibe} style, for ${audience}.\n\nProject: ${project.project_id}\nView: ${result.webUrl}`,
+            text: `Creating "${topic}" — ${slideCount} slides, ${vibe} style, for ${audience}.\n\nProject: ${project.project_id}`,
           },
         ],
-        structuredContent: result,
+        structuredContent: {
+          action: "create-deck",
+          projectId: project.project_id,
+          planId: plan.plan_id,
+          topic,
+          audience,
+          vibe,
+          slideCount,
+          apiUrl: SLIDECRAFT_API,
+          webUrl: `https://slidecraft.alpha-pm.dev/?project=${project.project_id}&tab=overview`,
+        },
       };
     },
   );
