@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SlideCraft</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a1628; color: #ddd; padding: 16px; }
+    .header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .header h1 { font-size: 18px; color: #e0c97f; font-weight: 700; }
+    .header .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #1a2a4a; color: #5dade2; }
+
+    /* Progress */
+    .progress-wrap { margin-bottom: 16px; }
+    .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .progress-label { font-size: 13px; color: #888; }
+    .progress-elapsed { font-size: 11px; color: #555; font-family: monospace; }
+    .progress-bar { height: 5px; background: #1a1a2e; border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #2d6a4f, #e0c97f); border-radius: 3px; transition: width 0.4s ease; }
+
+    /* Status */
+    .status-msg { font-size: 13px; color: #888; margin-bottom: 16px; padding: 12px; background: #0d1b2a; border: 1px solid #1a2a4a; border-radius: 8px; }
+    .status-msg.error { border-color: #e74c3c; color: #e74c3c; }
+
+    /* Slide grid */
+    .slide-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .slide-card { background: #0d1b2a; border: 1px solid #1a2a4a; border-radius: 8px; overflow: hidden; min-height: 110px; }
+    .slide-card.done { border-color: #2d6a4f; }
+    .slide-card.generating { border-color: #e0c97f; }
+    .slide-card.failed { border-color: #e74c3c; }
+    .slide-card img { width: 100%; height: 90px; object-fit: cover; }
+    .slide-card .placeholder { display: flex; align-items: center; justify-content: center; height: 90px; color: #333; font-size: 20px; font-weight: 700; }
+    .slide-card .spinner-wrap { display: flex; align-items: center; justify-content: center; height: 90px; }
+    .spinner { width: 20px; height: 20px; border: 2px solid #1a2a4a; border-top-color: #e0c97f; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .slide-card .card-footer { padding: 5px 8px; font-size: 10px; color: #555; border-top: 1px solid #1a2a4a; }
+    .slide-card.done .card-footer { color: #2d6a4f; }
+    .slide-card.generating .card-footer { color: #e0c97f; }
+
+    /* Project list */
+    .project-list { display: flex; flex-direction: column; gap: 8px; }
+    .project-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #0d1b2a; border: 1px solid #1a2a4a; border-radius: 8px; cursor: default; }
+    .project-item .p-title { color: #e0c97f; font-weight: 600; font-size: 14px; flex: 1; }
+    .project-item .p-status { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #1a3a2a; color: #2d6a4f; }
+    .project-item .p-date { font-size: 11px; color: #555; }
+
+    /* Link */
+    .web-link { display: inline-block; margin-top: 12px; padding: 8px 16px; background: #1a2a4a; color: #5dade2; border-radius: 6px; font-size: 12px; text-decoration: none; border: 1px solid #2a3a5a; }
+
+    /* Build log */
+    .build-log { margin-top: 12px; }
+    .build-log summary { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; padding: 8px 0; }
+    .log-entries { max-height: 200px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; line-height: 1.6; color: #555; padding: 8px; background: #060e1a; border-radius: 6px; }
+    .log-entry.qa { color: #2d6a4f; }
+    .log-entry.preflight { color: #e0c97f; }
+    .log-entry.error { color: #e74c3c; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>SlideCraft</h1>
+    <span class="badge" id="mode-badge">connecting...</span>
+  </div>
+  <div id="status" class="status-msg">Connecting to SlideCraft...</div>
+  <div id="progress-section" class="progress-wrap" style="display:none;">
+    <div class="progress-header">
+      <span class="progress-label" id="progress-label">0 / 0 slides</span>
+      <span class="progress-elapsed" id="progress-elapsed"></span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  </div>
+  <div id="slide-grid" class="slide-grid"></div>
+  <div id="project-list" class="project-list" style="display:none;"></div>
+  <a id="web-link" class="web-link" style="display:none;" target="_blank">Open in SlideCraft</a>
+  <details class="build-log" id="build-log" style="display:none;">
+    <summary>Build Log</summary>
+    <div class="log-entries" id="log-entries"></div>
+  </details>
+  <script type="module" src="./src/mcp-app.ts"></script>
+</body>
+</html>
