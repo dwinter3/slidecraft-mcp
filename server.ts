@@ -151,7 +151,7 @@ export function createServer(apiKey?: string): McpServer {
         content: [
           {
             type: "text",
-            text: `Creating "${topic}" — ${slideCount} slides, ${vibe} style, for ${audience}.\n\nProject: ${project.project_id}`,
+            text: `Creating "${topic.substring(0, 100)}" — ${slideCount} slides, ${vibe} style, for ${audience}.\n\nProject: ${project.project_id}`,
           },
         ],
         structuredContent: {
@@ -164,6 +164,99 @@ export function createServer(apiKey?: string): McpServer {
           slideCount,
           apiUrl: SLIDECRAFT_API,
           webUrl: `https://slidecraft.alpha-pm.dev/?project=${project.project_id}&tab=overview`,
+        },
+      };
+    },
+  );
+
+  // ── Tool: create-deck-with-plan ──
+  // Claude Desktop Cowork can plan the deck itself and pass the plan directly,
+  // skipping the Bedrock planning call (saves ~$0.05-0.10 per deck)
+  registerAppTool(
+    server,
+    "create-deck-with-plan",
+    {
+      title: "Create Deck from Plan",
+      description:
+        "Create a slide deck using a pre-built plan. Use this when you (Claude) have already planned the slide structure — it skips the server-side AI planning step and goes straight to image generation. This saves cost and time. Each slide in the plan needs: number (string like '01'), title, prompt_hint (detailed visual description for the image generator), and optionally key_points and source_text.",
+      inputSchema: {
+        topic: z.string().describe("Deck topic/objective"),
+        audience: z.string().describe("Target audience"),
+        vibe: z.string().describe("Visual style key"),
+        plan: z.array(z.object({
+          number: z.string().describe("Slide number like '01', '02'"),
+          title: z.string().describe("Slide title"),
+          prompt_hint: z.string().describe("Detailed visual description for image generation. Be specific about layout, data, icons, text to show."),
+          key_points: z.array(z.string()).optional(),
+          source_text: z.string().optional(),
+        })).describe("Array of slide definitions"),
+      },
+      _meta: { ui: { resourceUri } },
+    },
+    async ({ topic, audience, vibe, plan }) => {
+      // 1. Create project
+      const project = (await apiCall("POST", "/api/create-project", {
+        title: topic.substring(0, 80),
+        objective: topic,
+        audience,
+        vibe,
+        style: "persuasive",
+        slide_count: plan.length,
+      })) as { ok: boolean; project_id: string };
+
+      if (!project.ok) {
+        return {
+          content: [{ type: "text", text: "Failed to create project" }],
+          structuredContent: { error: "Failed to create project" },
+        };
+      }
+
+      // 2. Ingest topic
+      await apiCall("POST", "/api/ingest-source", {
+        project_id: project.project_id,
+        type: "text",
+        content: topic,
+        label: "Deck description",
+      });
+
+      // 3. Save plan directly to S3 (skip Bedrock planning)
+      // We submit generation jobs immediately — no plan-deck call needed
+      const results: Array<{ slideNumber: string; jobId?: string; ok: boolean }> = [];
+      for (const slide of plan) {
+        let prompt = slide.prompt_hint || slide.title;
+        if (slide.key_points?.length) prompt += "\n\nKey points: " + slide.key_points.join(", ");
+        if (slide.source_text) prompt += "\n\nSource content: " + slide.source_text;
+
+        const data = (await apiCall("POST", "/api/new-slide", {
+          project_id: project.project_id,
+          slide_number: slide.number,
+          custom_prompt: prompt,
+          traits: [],
+          vibe_rules: "",
+        })) as { ok: boolean; job_id?: string };
+
+        results.push({ slideNumber: slide.number, jobId: data.job_id, ok: data.ok });
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Creating "${topic.substring(0, 100)}" — ${plan.length} slides, ${vibe} style. Skipped AI planning (you provided the plan). Submitted ${results.length} slides for generation.\n\nProject: ${project.project_id}`,
+          },
+        ],
+        structuredContent: {
+          action: "create-deck",
+          projectId: project.project_id,
+          planId: null,
+          topic,
+          audience,
+          vibe,
+          slideCount: plan.length,
+          apiUrl: SLIDECRAFT_API,
+          webUrl: `https://slidecraft.alpha-pm.dev/?project=${project.project_id}&tab=overview`,
+          skippedPlanning: true,
+          generationResults: results,
         },
       };
     },

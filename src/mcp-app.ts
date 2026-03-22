@@ -524,10 +524,15 @@ app.ontoolresult = (result: any) => {
     projectId = data.projectId;
     planId = data.planId;
     apiUrl = data.apiUrl;
-    setStatus(`Creating "${data.topic}" \u2014 ${data.slideCount} slides, ${data.vibe} style`);
+    if (data.skippedPlanning) {
+      setStatus(`Generating ${data.slideCount} slides (plan provided by Claude)...`);
+    } else {
+      setStatus(`Creating "${(data.topic || "").substring(0, 60)}" \u2014 ${data.slideCount} slides, ${data.vibe} style`);
+    }
     const link = $("web-link") as HTMLAnchorElement;
     link.href = data.webUrl;
     link.style.display = "";
+    link.textContent = "Open in SlideCraft";
     startPolling();
   } else if (currentAction === "list-decks") {
     setBadge("decks");
